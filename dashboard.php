@@ -1,4 +1,5 @@
 <?php 
+
 include 'functions.php';
 requireLogin(); // Only utilizatori autentificati
 ?>

@@ -1,7 +1,7 @@
 <?php 
 include 'functions.php';
 
-// Dacă e deja logat, trimite la dashboard
+// If deja logat, retrimite to dashboard
 if(isLoggedIn()) {
     header('Location: dashboard.php');
     exit();
@@ -16,7 +16,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
     $confirm = $_POST['confirm_password'];
     
-    // Validări
+    // Validations
     if(empty($username) || empty($email) || empty($password)) {
         $error = __('all_fields_required');
     } elseif(!validateEmail($email)) {
@@ -27,7 +27,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = __('passwords_not_match');
     } else {
         $users = getUsers();
-        // Verifică dacă email există deja
+        // Verifica daca email există deja
         foreach($users as $user) {
             if($user['email'] === $email) {
                 $error = __('email_exists');
@@ -57,12 +57,12 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
 ]];
 file_put_contents($notifFile, json_encode($welcomeNotif));
             
-            // Auto-login după înregistrare
+            // Auto-login dupa register
             $_SESSION['user_id'] = $newUser['id'];
             $_SESSION['username'] = $newUser['username'];
             $_SESSION['user_email'] = $newUser['email'];
             
-            // Redirect după 2 secunde
+            // Redirect after 2 secunde
             header("refresh:2;url=dashboard.php");
         }
     }
@@ -151,7 +151,7 @@ file_put_contents($notifFile, json_encode($welcomeNotif));
     </main>
 
     <footer>
-        <p>&copy; 2025 ReviewHub - <?php echo __('footer_text'); ?></p>
+        <p>&copy; 2026 ReviewHub - <?php echo __('footer_text'); ?></p>
     </footer>
 
     <script src="js/script.js"></script>

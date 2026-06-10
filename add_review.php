@@ -1,6 +1,6 @@
 <?php 
 include 'functions.php';
-requireLogin(); // Only for utilizatori autentificati
+requireLogin(); // Doar utilizatori autentificați
 
 $error = '';
 $success = '';
@@ -30,12 +30,10 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         ];
         $reviews[] = $newReview;
         saveReviews($reviews);
-        // Check si acordarea badgeurilor
-checkAndUpdateBadges($_SESSION['user_id'], $_SESSION['username']);
         
-        // Redirect la dashboard dupa 2 secunde
-        $success = __('review_added');
-        header("refresh:2;url=dashboard.php");
+        // Redirecționează la dashboard
+        header('Location: dashboard.php?success=1');
+        exit();
     }
 }
 ?>
@@ -46,6 +44,30 @@ checkAndUpdateBadges($_SESSION['user_id'], $_SESSION['username']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo __('add_review'); ?> - ReviewHub</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .rating-stars {
+            display: flex;
+            gap: 10px;
+            font-size: 30px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .rating-stars span {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .rating-stars span:hover {
+            transform: scale(1.2);
+        }
+        .star-active {
+            color: #ffd700;
+            text-shadow: 0 0 5px #ffd700;
+        }
+        .review-form-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+    </style>
 </head>
 <body class="<?php echo $_SESSION['theme'] ?? 'light'; ?>">
     <nav class="navbar">
@@ -66,113 +88,139 @@ checkAndUpdateBadges($_SESSION['user_id'], $_SESSION['username']);
                 <?php endif; ?>
             </div>
             <div class="nav-controls">
-                <div class="nav-controls">
                 <button onclick="toggleTheme()" class="theme-btn">🌓</button>
                 <select onchange="changeLanguage(this.value)" class="lang-select">
-                    <option value="ro" <?php echo $lang=='ro'?'selected':''; ?>>Română</option>
-                    <option value="en" <?php echo $lang=='en'?'selected':''; ?>>English</option>
-                    <option value="ru" <?php echo $lang=='ru'?'selected':''; ?>>Русский</option>
+                    <option value="ro" <?php echo $lang=='ro'?'selected':''; ?>>🇷🇴 Română</option>
+                    <option value="en" <?php echo $lang=='en'?'selected':''; ?>>🇬🇧 English</option>
+                    <option value="ru" <?php echo $lang=='ru'?'selected':''; ?>>🇷🇺 Русский</option>
                 </select>
-            </div>
-                    </div>
-                </div>
             </div>
         </div>
     </nav>
 
     <main class="container">
-        <div class="form-container">
-            <h2>➕ <?php echo __('add_review'); ?></h2>
+        <div class="review-form-container">
+            <h1>➕ <?php echo __('add_review'); ?></h1>
             
             <?php if($error): ?>
                 <div class="message error"><?php echo $error; ?></div>
             <?php endif; ?>
             
-            <?php if($success): ?>
-                <div class="message success"><?php echo $success; ?> Redirecționare...</div>
-            <?php endif; ?>
-            
             <form method="POST" class="form" id="reviewForm">
                 <div class="form-group">
                     <label><?php echo __('title'); ?>:</label>
-                    <input type="text" name="title" required placeholder="Ex: Inception, Dune, Harry Potter...">
+                    <input type="text" name="title" required placeholder="Ex: Inception, Dune, Harry Potter..." value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
                 </div>
                 
                 <div class="form-group">
                     <label>Tip:</label>
                     <select name="type" required>
-                        <option value="movie">🎬 <?php echo __('movies'); ?></option>
-                        <option value="book">📖 <?php echo __('books'); ?></option>
+                        <option value="movie" <?php echo isset($_POST['type']) && $_POST['type'] == 'movie' ? 'selected' : ''; ?>>🎬 Film</option>
+                        <option value="book" <?php echo isset($_POST['type']) && $_POST['type'] == 'book' ? 'selected' : ''; ?>>📖 Carte</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label>Rating:</label>
-                    <div class="rating-input">
-                        <select name="rating" required class="rating-select">
-                            <option value="">Alege rating</option>
-                            <option value="5">⭐⭐⭐⭐⭐ - Excelent</option>
-                            <option value="4">⭐⭐⭐⭐ - Foarte bun</option>
-                            <option value="3">⭐⭐⭐ - Bun</option>
-                            <option value="2">⭐⭐ - Slab</option>
-                            <option value="1">⭐ - Foarte slab</option>
-                        </select>
+                    <div class="rating-stars" id="ratingStars">
+                        <span data-value="1">☆</span>
+                        <span data-value="2">☆</span>
+                        <span data-value="3">☆</span>
+                        <span data-value="4">☆</span>
+                        <span data-value="5">☆</span>
                     </div>
+                    <input type="hidden" name="rating" id="ratingValue" value="<?php echo isset($_POST['rating']) ? $_POST['rating'] : ''; ?>" required>
                 </div>
                 
                 <div class="form-group">
                     <label><?php echo __('your_review'); ?>:</label>
-                    <textarea name="comment" rows="6" required placeholder="Scrie aici părerea ta despre acest film/carte..."></textarea>
+                    <textarea name="comment" rows="6" required placeholder="Scrie aici părerea ta despre acest film/carte..."><?php echo isset($_POST['comment']) ? htmlspecialchars($_POST['comment']) : ''; ?></textarea>
                 </div>
                 
-                <div class="form-buttons">
-                    <button type="submit" class="btn btn-primary">📝 <?php echo __('submit'); ?></button>
-                    <a href="dashboard.php" class="btn btn-cancel">❌ Anulează</a>
+                <div class="form-buttons" style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button type="submit" class="btn" style="background: #28a745;">📝 <?php echo __('submit'); ?></button>
+                    <a href="dashboard.php" class="btn" style="background: #6c757d;">❌ Anulează</a>
                 </div>
             </form>
         </div>
     </main>
 
     <footer>
-        <p>&copy; 2025 ReviewHub - <?php echo __('footer_text'); ?></p>
+        <p>&copy; 2026 ReviewHub - <?php echo __('footer_text'); ?></p>
     </footer>
 
     <script src="js/script.js"></script>
     <script>
-        // Validare forma in real-time
-        document.getElementById('reviewForm')?.addEventListener('submit', function(e) {
-            const title = document.querySelector('input[name="title"]').value;
-            const comment = document.querySelector('textarea[name="comment"]').value;
-            const rating = document.querySelector('select[name="rating"]').value;
+        // Sistem rating cu stele
+        const stars = document.querySelectorAll('#ratingStars span');
+        const ratingInput = document.getElementById('ratingValue');
+        
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                const value = parseInt(this.getAttribute('data-value'));
+                ratingInput.value = value;
+                
+                // Actualizează stelele
+                stars.forEach((s, index) => {
+                    if(index < value) {
+                        s.innerHTML = '★';
+                        s.classList.add('star-active');
+                    } else {
+                        s.innerHTML = '☆';
+                        s.classList.remove('star-active');
+                    }
+                });
+            });
             
-            if(!title.trim()) {
+            star.addEventListener('mouseenter', function() {
+                const value = parseInt(this.getAttribute('data-value'));
+                stars.forEach((s, index) => {
+                    if(index < value) {
+                        s.innerHTML = '★';
+                    } else {
+                        s.innerHTML = '☆';
+                    }
+                });
+            });
+            
+            star.addEventListener('mouseleave', function() {
+                const currentValue = parseInt(ratingInput.value) || 0;
+                stars.forEach((s, index) => {
+                    if(index < currentValue) {
+                        s.innerHTML = '★';
+                    } else {
+                        s.innerHTML = '☆';
+                    }
+                });
+            });
+        });
+        
+        // Validare formular
+        document.getElementById('reviewForm').addEventListener('submit', function(e) {
+            const title = document.querySelector('input[name="title"]').value.trim();
+            const comment = document.querySelector('textarea[name="comment"]').value.trim();
+            const rating = document.querySelector('input[name="rating"]').value;
+            
+            if(title === '') {
                 e.preventDefault();
-                alert('<?php echo __('all_fields_required'); ?>');
+                alert('Te rog să completezi titlul!');
                 return false;
             }
             
-            if(!rating) {
+            if(rating === '') {
                 e.preventDefault();
-                alert('Te rog să alegi un rating!');
+                alert('Te rog să selectezi un rating (1-5 stele)!');
                 return false;
             }
             
-            if(!comment.trim()) {
+            if(comment === '') {
                 e.preventDefault();
-                alert('<?php echo __('all_fields_required'); ?>');
+                alert('Te rog să scrii o recenzie!');
                 return false;
             }
             
             return true;
         });
-        
-        // Add prveiw la rating
-        const ratingSelect = document.querySelector('.rating-select');
-        if(ratingSelect) {
-            ratingSelect.addEventListener('change', function() {
-                console.log('Rating selectat: ' + this.value);
-            });
-        }
     </script>
 </body>
 </html>
